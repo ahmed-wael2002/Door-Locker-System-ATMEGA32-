@@ -1,0 +1,57 @@
+/*
+ * protocol.h
+ *
+ *  Created on: Nov 2, 2023
+ *      Author: Wael
+ */
+
+#ifndef PROTOCOL_H_
+#define PROTOCOL_H_
+
+/*
+ * This header file contains the Protocol commands
+ * that govern the communication between the microcontrollers
+ *
+ */
+
+/* ============================================== */
+/*                 UART Commands                  */
+/* ============================================== */
+
+/* Password Commands */
+#define CHECK_PASS_EXISTS_CMD 		11
+#define SUBMIT_PASSWORD_CMD			12
+#define PASS_FOUND_CMD				13
+#define	PASS_NOT_FOUND_CMD			14
+#define CHANGE_PASSWORD_CMD			15
+
+/* Open Door Command */
+#define OPEN_DOOR_CMD				21
+
+/* Enter Error State */
+#define ACTIVATE_ERROR_CMD			31
+
+/* ============================================== */
+/*                Type Definition                 */
+/* ============================================== */
+typedef enum{
+	NOT_IDENTICAL,
+	IDENTICAL
+}Boolean;
+
+
+/* ============================================== */
+/*                 Common Functions               */
+/* ============================================== */
+/*
+ * Function Description:
+ * - Function to compare 2 strings & detect whether they are identical or not
+ * - Function does not depend on the kind of string delimeter # or \0
+ * - Inputs: 	str1, str2 (Strings to be compared)
+ *  			PASS_SIZE = the size of the password
+ * - Outputs:	result: Boolean that indicates whether the strings are identical or not
+ */
+uint8 compare_strings(uint8 str1[], uint8 str2[]);
+
+
+#endif /* PROTOCOL_H_ */

@@ -1,0 +1,244 @@
+/*
+ * HMI_application.c
+ *
+ *  Created on: Oct 31, 2023
+ *      Author: Wael
+ */
+
+/* ============================================== */
+/*              Library Definitions               */
+/* ============================================== */
+#include "lcd.h"
+#include "keypad.h"
+#include "uart.h"			/* Initialization of the UART module */
+#include "protocol.h"		/* Definition of the UART communcation protocol commands */
+#include <util/delay.h>
+
+/* ============================================== */
+/*                Type Definition                 */
+/* ============================================== */
+typedef enum{
+	INIT,			/* Initial state of the system */
+	MENU,			/* State that shows the menu of operations */
+	OPEN_DOOR,		/* State that initiates the action of the door locker */
+	CHANGE_PASS,	/* State that lets user change the password of the system */
+	ERROR			/* State that indicates the system errors */
+}SystemState;
+
+/* ============================================== */
+/*              Function Prototypes               */
+/* ============================================== */
+/*
+ * Function Description:
+ * - Function to read the keypad presses and create password
+ * - Inputs: 	password string
+ * - Outputs:	None
+ */
+void enterPassword(uint8 password[]);
+/*
+ * Function Description:
+ * - Function to communicate with Control Microcontroller and
+ 	 	 checks if the typed password matches with the stored password
+ * - Inputs: 	password string
+ * - Outputs:	Response from the Control Microcontroller according to protocol
+ */
+uint8 checkPassword(uint8 password[]);
+
+
+/* ============================================== */
+/*                 Main Program                   */
+/* ============================================== */
+int main(void){
+	/***** System Initialization *****/
+	/* Initializing Hardware Modules */
+	LCD_init();
+	UART_ConfigType uart_configs = {9600,DISABLED,ONE_BIT,BIT_8};
+	UART_init(&uart_configs);
+
+	/* System Variables Declaration */
+	SystemState state = INIT;
+	uint8 password[6];
+	uint8 password_1[6];
+	uint8 cmd = 0;
+	uint8 key;
+	uint8 errors = 0;
+
+	/***** Application *****/
+	while(1){
+		LCD_clearScreen();
+
+		switch(state){
+
+		/* ***************************************************************
+		 * FIRST STATE -- Initializing system and setting first password
+		 * ***************************************************************/
+		case INIT:
+			/* Local password validation:
+			 * - Ensuring the user has entered the correct password
+			 * 		before registering it to the EEPROM
+			 * */
+			/* Entering password -- First Time */
+			enterPassword(password);
+			/* Re-entering password -- Second Time */
+			LCD_clearScreen();
+			enterPassword(password_1);
+			/* Password Validation */
+			if (compare_strings(password, password_1) == IDENTICAL){
+				/* -- PASSWORDS MATCHED -- */
+				/* Sending password submission command */
+				UART_sendByte(SUBMIT_PASSWORD_CMD);
+				UART_sendString(password);
+
+				/* Transitioning to the next state */
+				state = MENU;
+			}
+			else {
+				/* -- PASSWORDS MIS-MATCHED -- */
+				LCD_clearScreen();
+				LCD_moveCursor(0,0);
+				LCD_displayString("PASS ERROR!!");
+				_delay_ms(3000);
+				state = INIT;
+				/* Infinitely looping till the user enters
+				 * 	matching passwords */
+			}
+			break;
+
+
+		/* *************************************************
+		 * SECOND STATE -- Display menu
+		 * *************************************************/
+		case MENU:
+			/* Printing the menu screen */
+			LCD_moveCursor(0,0);
+			LCD_displayString("+ : Open Door");
+			LCD_moveCursor(1,0);
+			LCD_displayString("- : Change Pass");
+			/* Validating the user input */
+			while(1){
+				key = KEYPAD_getPressedKey();
+				if (key == '+'){
+					state = OPEN_DOOR;
+					break;
+				}
+				else if (key == '-'){
+					state = CHANGE_PASS;
+					break;
+				}
+			}
+			break;
+
+		/* *************************************************
+		 * THIRD STATE -- Opening Door Option
+		 * *************************************************/
+		case OPEN_DOOR:
+			/* Setting up password screen */
+			enterPassword(password_1);
+			cmd = checkPassword(password_1);
+			/* Busy Wait till response arrives */
+			while((cmd!=PASS_FOUND_CMD) && (cmd!=PASS_NOT_FOUND_CMD));
+
+			/* Password validation stage*/
+			if (cmd == PASS_FOUND_CMD){
+				UART_sendByte(OPEN_DOOR_CMD);
+				errors = 0;
+				state = MENU;
+			}
+			else if (errors<3){
+				errors++;
+				state = OPEN_DOOR;
+			}
+			else {
+				LCD_clearScreen();
+				LCD_moveCursor(0,0);
+				LCD_displayString("OUT OF TRIALS!");
+				UART_sendByte(ACTIVATE_ERROR_CMD);
+				_delay_ms(6000);
+				state = MENU;
+			}
+			break;
+
+		/* *************************************************
+		 * FOURTH STATE -- Changing password of the system
+		 * *************************************************/
+		case CHANGE_PASS:
+			/* Entering the system's password */
+			enterPassword(password);
+			cmd = checkPassword(password);
+			/* Validating the entered password */
+			if (cmd==PASS_FOUND_CMD){
+				/* Enter new password */
+				enterPassword(password);
+				UART_sendByte(SUBMIT_PASSWORD_CMD);
+				UART_sendString(password);
+				errors = 0;
+				state = MENU;
+			}
+			else if (errors<3){
+				/* Incorrect input -- Re-enter password */
+				errors++;
+				state = CHANGE_PASS;
+			}
+			else{
+				/* Incorrect input -- Number of trials finished */
+				state = ERROR;
+				errors = 0;
+			}
+			break;
+
+		/* *************************************************
+		 * FIFTH STATE -- Error state
+		 * *************************************************/
+		case ERROR:
+			LCD_moveCursor(0,0);
+			LCD_displayString("Error State!");
+			UART_sendByte(ACTIVATE_ERROR_CMD);
+			_delay_ms(60000);
+			state = MENU;
+			break;
+		}
+	}
+	return 0;
+}
+
+
+/* ============================================== */
+/*              Function Definitions              */
+/* ============================================== */
+
+void enterPassword(uint8 password[]){
+	/* Setup Screen */
+	LCD_clearScreen();
+	LCD_moveCursor(0,0);
+	LCD_displayString("Enter Pass: ");
+	LCD_moveCursor(1,0);
+
+	/* Read the keypad input & append it to string */
+	uint8 key;
+	uint8 presses = 0;
+	while(1){
+		key = KEYPAD_getPressedKey();
+
+		if ((key<='9') && (key>='0') && (presses<PASS_SIZE)){
+			password[presses] = key;
+			presses++;
+			LCD_displayCharacter('*');
+		}
+		else if ((key=='=')&&(presses>=PASS_SIZE))
+		{
+			password[5] = '#';
+			return;
+		}
+
+		_delay_ms(200);
+	}
+}
+
+
+uint8 checkPassword(uint8 password[]){
+	UART_sendByte(CHECK_PASS_EXISTS_CMD);
+	UART_sendString(password);
+	uint8 response = UART_recieveByte();
+	return response;
+}
+

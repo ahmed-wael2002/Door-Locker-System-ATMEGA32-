@@ -1,0 +1,45 @@
+/*
+ * CTL_application.c
+ *
+ *  Created on: Oct 31, 2023
+ *      Author: Wael
+ */
+
+#include "external_eeprom.h"
+#include "buzzer.h"
+#include "motor.h"
+#include "protocol.h"
+#include "uart.h"
+
+int main(void){
+	/* Initialzing modules */
+	Buzzer_init();
+	DcMotor_init();
+
+	/* Operational variables */
+	uint8 cmd;
+
+	while(1){
+		cmd = UART_recieveByte();
+
+		switch(cmd){
+		case CHECK_PASS_EXISTS_CMD:
+			break;
+		case SUBMIT_PASSWORD_CMD:
+			break;
+		case PASS_FOUND_CMD:
+			break;
+		case PASS_NOT_FOUND_CMD:
+			break;
+		case CHANGE_PASSWORD_CMD:
+			break;
+		case OPEN_DOOR_CMD:
+			break;
+		case ACTIVATE_ERROR_CMD:
+			break;
+		}
+
+	}
+
+	return 0;
+}

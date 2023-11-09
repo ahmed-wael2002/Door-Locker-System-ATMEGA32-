@@ -1,0 +1,53 @@
+/*
+ * timer1.c
+ *
+ *  Created on: Oct 24, 2023
+ *      Author: Wael
+ */
+
+#include "timer1.h"
+#include <avr/interrupt.h>
+#include "common_macros.h"
+#include <avr/io.h>
+
+/*******************************************************************************
+ *                           Global Variables                                  *
+ *******************************************************************************/
+
+/* Global variables to hold the address of the call back function in the application */
+static volatile void (*g_callBackPtr)(void) = NULL_PTR;
+
+/*******************************************************************************
+ *                       Interrupt Service Routines                            *
+ *******************************************************************************/
+
+ISR(TIMER1_CAPT_vect)
+{
+	if(g_callBackPtr != NULL_PTR)
+	{
+		/* Call the Call Back function in the application after the edge is detected */
+		(*g_callBackPtr)(); /* another method to call the function using pointer to function g_callBackPtr(); */
+	}
+}
+
+
+/*******************************************************************************
+ *                       Function Definitions                            *
+ *******************************************************************************/
+/*
+ * Description: Function to initialize Timer1 module.
+ * 1-
+ * 2-
+ */
+void Timer1_init(const Timer1_ConfigType *Config_ptr){
+
+}
+
+/*
+ * Description: Function to set the Call Back function address.
+ */
+void ICU_setCallBack(void(*a_ptr)(void))
+{
+	/* Save the address of the Call back function in a global variable */
+	g_callBackPtr = a_ptr;
+}

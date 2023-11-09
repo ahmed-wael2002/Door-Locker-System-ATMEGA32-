@@ -1,0 +1,39 @@
+/*
+ * protocol.h
+ *
+ *  Created on: Nov 2, 2023
+ *      Author: Wael
+ */
+
+#ifndef PROTOCOL_H_
+#define PROTOCOL_H_
+
+/*
+ * This header file contains the Protocol commands
+ * that govern the communication between the microcontrollers
+ *
+ */
+
+/* ============================================== */
+/*                 UART Commands                  */
+/* ============================================== */
+
+/* Password Commands */
+#define CHECK_PASS_EXISTS_CMD 		11
+#define SUBMIT_PASSWORD_CMD			12
+#define PASS_FOUND_CMD				13
+#define	PASS_NOT_FOUND_CMD			14
+
+/* Open Door Command */
+#define OPEN_DOOR_CMD				21
+
+/* Enter Error State */
+#define ACTIVATE_ERROR_CMD			31
+
+/* Ready State */
+#define MC1_READY					41
+#define MC2_READY					42
+
+
+
+#endif /* PROTOCOL_H_ */

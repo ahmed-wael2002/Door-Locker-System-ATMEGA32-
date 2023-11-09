@@ -1,0 +1,91 @@
+/*
+ * CTL_application.c
+ *
+ *  Created on: Oct 31, 2023
+ *      Author: Wael
+ */
+
+#include "external_eeprom.h"
+#include "buzzer.h"
+#include "motor.h"
+#include "protocol.h"
+#include "uart.h"
+#include <util/delay.h>
+
+#define MEM_ADDRESS	0x0311
+#define PASS_SIZE	5
+
+typedef enum{
+	NOT_IDENTICAL,
+	IDENTICAL
+}Boolean;
+
+uint8 compare_strings(uint8 str1[], uint8 str2[]){
+	Boolean result = IDENTICAL;
+	for(uint8 i=0; i<PASS_SIZE; i++){
+		if(str1[i] != str2[i]){
+			result = NOT_IDENTICAL;
+			break;
+		}
+	}
+	return result;
+}
+
+int main(void){
+	/* Initialzing modules */
+	Buzzer_init();
+	DcMotor_init();
+
+	/* Operational variables */
+	uint8 cmd;
+	uint8 password;
+	uint8 str[6];
+	uint8 saved_pass[6];
+	uint8 i;
+
+	while(1){
+		cmd = UART_recieveByte();
+
+		switch(cmd){
+
+		case CHECK_PASS_EXISTS_CMD:
+			/* Receive String & Read password from EEPROM */
+			UART_receiveString(str);
+			for(i=0;i<PASS_SIZE;i++)
+				saved_pass[i] = EEPROM_readByte(MEM_ADDRESS+i, saved_pass[i]);
+
+			/* Compare sent password and saved password and resend response */
+			cmd = compare_strings(str, saved_pass);
+			if (cmd == IDENTICAL)
+				UART_sendByte(PASS_FOUND_CMD);
+			else
+				UART_sendByte(PASS_NOT_FOUND_CMD);
+			break;
+
+		case SUBMIT_PASSWORD_CMD:
+			/* Receive Password String & Write the password into EEPROM */
+			UART_recieveString(str);
+			for (i=0; i<PASS_SIZE; i++)
+				EEPROM_writeByte(MEM_ADDRESS+i, str[i]);
+			break;
+
+		case PASS_FOUND_CMD:
+			break;
+
+		case PASS_NOT_FOUND_CMD:
+			break;
+
+		case OPEN_DOOR_CMD:
+			break;
+
+		case ACTIVATE_ERROR_CMD:
+			Buzzer_on();
+			_delay_ms(60000);
+			Buzzer_off();
+			break;
+		}
+
+	}
+
+	return 0;
+}

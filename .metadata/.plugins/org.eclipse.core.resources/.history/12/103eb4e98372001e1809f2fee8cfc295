@@ -1,0 +1,70 @@
+/*
+ * timer1.h
+ *
+ *  Created on: Oct 24, 2023
+ *      Author: Wael
+ */
+
+#ifndef TIMER1_H_
+#define TIMER1_H_
+
+#include "std_types.h"
+
+/*******************************************************************************
+ *                      Types Definition                                    *
+ *******************************************************************************/
+/* Enumeration Description:
+ * - Define the prescaler type of the timer module
+ * - The 0 mode is neglected
+ * - Each enumeration is mapped to number used in the hardware configuration
+ */
+typedef enum{
+	F_CPU_1=1,
+	F_CPU_8,
+	F_CPU_64,
+	F_CPU_256,
+	F_CPU_1024,
+	EXTERNAL_FALLING,
+	EXTERNAL_RISING
+}Timer1_Prescaler;
+
+/* Enumeration Description:
+ * - Define the operation mode of the timer module
+ * - Only Normal and Compare modes are supported
+ * - The remaining modes are neglected in this module
+ * - Each enumeration is mapped to number used in the hardware configuration
+ */
+typedef enum{
+	NORMAL=0,
+	CTC=4
+}Timer1_Mode;
+
+/* Structure Description:
+ * - Define the operation mode of the timer module
+ * - Only Normal and Compare modes are supported
+ * - The remaining modes are neglected in this module
+ * - Each enumeration is mapped to number used in the hardware configuration
+ */
+typedef struct{
+	uint16 initial_value;
+	uint16 compare_value;
+	Timer1_Prescaler prescaler;
+	Timer1_Mode mode;
+}Timer1_ConfigType;
+
+/*******************************************************************************
+ *                      Functions Prototypes                                   *
+ *******************************************************************************/
+
+/*
+ * Description :
+ * Functional responsible for Initialize the UART device by:
+ * 1. Setup the Frame format like number of data bits, parity bit type and number of stop bits.
+ * 2. Enable the UART.
+ * 3. Setup the UART baud rate.
+ */
+void Timer1_init();
+
+
+
+#endif /* TIMER1_H_ */

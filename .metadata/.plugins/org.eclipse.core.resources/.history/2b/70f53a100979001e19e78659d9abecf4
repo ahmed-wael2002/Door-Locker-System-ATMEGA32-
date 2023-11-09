@@ -1,0 +1,22 @@
+/*
+ * CTL_application.c
+ *
+ *  Created on: Oct 31, 2023
+ *      Author: Wael
+ */
+
+#include "external_eeprom.h"
+#include "buzzer.h"
+#include "motor.h"
+
+int main(void){
+	/* Initialzing modules */
+	Buzzer_init();
+	Motor_init();
+
+	while(1){
+
+	}
+
+	return 0;
+}
